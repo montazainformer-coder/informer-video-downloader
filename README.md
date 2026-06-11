@@ -30,8 +30,10 @@ možeš pokrenuti i ručno dugmetom **Proveri ažuriranje**. Update paket se pro
 SHA-256 hashom pre instalacije, a postojeći `tools` folder i preuzeti video fajlovi
 ostaju netaknuti.
 
-Za novu verziju promeni kod, napravi Git tag kao `v1.1.0` i pošalji tag na GitHub.
-GitHub Actions će automatski napraviti Release i update ZIP.
+Za novu verziju promeni kod, pa na razvojnom računaru pokreni
+`PUBLISH-UPDATE.bat`. Unesi verziju kao `1.1.0` i kratak opis. Skripta će sama
+napraviti commit i Git tag, a GitHub Actions će automatski napraviti Release i
+update ZIP.
 
 ## Izvor videa
 
