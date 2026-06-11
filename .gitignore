@@ -1,0 +1,8 @@
+tools/
+downloads/
+*.part
+*.ytdl
+downloader-crash.log
+launcher-error.log
+update.log
+*.zip
