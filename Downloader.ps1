@@ -629,8 +629,10 @@ $downloadButton.Add_Click({
             '--retry-sleep', '2',
             '--socket-timeout', '30',
             '--ffmpeg-location', $script:FfmpegDir,
-            '--format', 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
+            '--format', 'bestvideo[height<=1080][vcodec^=avc1]+bestaudio[acodec^=mp4a.40.2]/bestvideo[height<=1080][vcodec^=avc1]+bestaudio[ext=m4a]/best[height<=1080][vcodec^=avc1][acodec^=mp4a.40.2]/best/bestvideo[height<=1080]+bestaudio/best',
             '--merge-output-format', 'mp4',
+            '--embed-metadata',
+            '--postprocessor-args', 'Metadata+ffmpeg_o:-c:v copy -c:a aac -profile:a aac_low -ar 48000 -b:a 192k',
             '--windows-filenames',
             '--trim-filenames', '200',
             '--output', $outputTemplate
@@ -639,7 +641,6 @@ $downloadButton.Add_Click({
         if (-not $playlistCheck.IsChecked) { $args += '--no-playlist' }
         if ($sourceCheck.IsChecked) {
             $args += @(
-                '--embed-metadata',
                 '--parse-metadata', 'webpage_url:(?P<meta_comment>.+)',
                 '--write-info-json',
                 '--write-description',

@@ -49,6 +49,8 @@ URL, autora/uploadera i ostale javno dostupne podatke.
 ## Napomene
 
 - Kvalitet je najbolji dostupan do 1080p; neki sajtovi nude samo nižu rezoluciju.
+- Završni MP4 preferira H.264 video i koristi AAC-LC 48 kHz stereo audio radi
+  kompatibilnosti sa Adobe Premiere Pro.
 - Privatni sadržaj, DRM i zaštite pristupa se ne zaobilaze.
 - Preuzimaj samo sadržaj za koji imaš dozvolu i poštuj uslove korišćenja sajta.
 - Sajtovi povremeno menjaju način rada; osvežavanje `tools\yt-dlp.exe` na noviju
