@@ -39,7 +39,7 @@ $script:UpdateChecked = $false
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Video Downloader" Width="860" Height="650" MinWidth="720" MinHeight="560"
+        Title="Video Downloader" Width="1180" Height="700" MinWidth="980" MinHeight="620"
         WindowStartupLocation="CenterScreen" Background="#0B1020" Foreground="#E8ECF5"
         FontFamily="Segoe UI">
   <Window.Resources>
@@ -67,6 +67,11 @@ $xaml = @'
   </Window.Resources>
 
   <Grid Margin="28">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="24"/>
+      <ColumnDefinition Width="300"/>
+    </Grid.ColumnDefinitions>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -154,6 +159,29 @@ $xaml = @'
       <Button x:Name="DownloadButton" Grid.Column="1" Content="Preuzmi 1080p" FontSize="15" Padding="24,12"/>
       <Button x:Name="CancelButton" Grid.Column="1" Content="Otkaži" FontSize="15" Padding="24,12" Background="#B43C5A" Visibility="Collapsed"/>
     </Grid>
+
+    <Border Grid.Column="2" Grid.Row="0" Grid.RowSpan="7" CornerRadius="16"
+            BorderBrush="#6A4A3A" BorderThickness="1" Background="#15100E" ClipToBounds="True">
+      <Grid>
+        <Image x:Name="BossImage" Stretch="UniformToFill"/>
+        <Rectangle IsHitTestVisible="False">
+          <Rectangle.Fill>
+            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+              <GradientStop Color="#00000000" Offset="0.38"/>
+              <GradientStop Color="#550B1020" Offset="0.68"/>
+              <GradientStop Color="#EE0B1020" Offset="1"/>
+            </LinearGradientBrush>
+          </Rectangle.Fill>
+        </Rectangle>
+        <StackPanel VerticalAlignment="Bottom" Margin="22,0,22,24">
+          <TextBlock Text="N A Š A" Foreground="#E8B08D" FontWeight="Bold" FontSize="12"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text="Šefica" Foreground="White" FontWeight="Bold" FontSize="32"
+                     HorizontalAlignment="Center" Margin="0,2,0,5"/>
+          <Border Height="2" Width="46" Background="#E08A5B" CornerRadius="1" HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Grid>
+    </Border>
   </Grid>
 </Window>
 '@
@@ -177,10 +205,21 @@ $downloadButton = $window.FindName('DownloadButton')
 $cancelButton = $window.FindName('CancelButton')
 $versionText = $window.FindName('VersionText')
 $updateButton = $window.FindName('UpdateButton')
+$bossImage = $window.FindName('BossImage')
 
 $defaultDownloads = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads\Video Downloader'
 $folderBox.Text = $defaultDownloads
 $versionText.Text = "Verzija $script:AppVersion"
+$bossImagePath = Join-Path $script:Root 'assets\nasa-sefica.png'
+if (Test-Path -LiteralPath $bossImagePath) {
+    $bossBitmap = New-Object Windows.Media.Imaging.BitmapImage
+    $bossBitmap.BeginInit()
+    $bossBitmap.CacheOption = [Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+    $bossBitmap.UriSource = New-Object Uri($bossImagePath, [UriKind]::Absolute)
+    $bossBitmap.EndInit()
+    $bossBitmap.Freeze()
+    $bossImage.Source = $bossBitmap
+}
 
 function Add-Log {
     param([string]$Message)

@@ -21,6 +21,7 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v', 'V')
           Set-Content -LiteralPath version.txt -Value $version -Encoding ASCII
           $files = @(
+            'assets',
             'Downloader.ps1',
             'Apply-Update.ps1',
             'Start-Downloader.bat',

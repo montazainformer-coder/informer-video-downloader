@@ -5,6 +5,8 @@ X/Twittera, Instagrama i drugih sajtova koje podržava `yt-dlp`.
 
 GitHub projekat: https://github.com/montazainformer-coder/informer-video-downloader
 
+Interfejs uključuje lokalni portret-panel **Naša Šefica** iz `assets` foldera.
+
 ## Pokretanje
 
 1. Raspakuj ceo folder na željeno mesto.
