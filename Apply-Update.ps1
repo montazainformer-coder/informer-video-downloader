@@ -21,7 +21,9 @@ try {
     }
 
     Add-Content -LiteralPath $logPath -Value "[$(Get-Date -Format s)] Ažuriranje je uspešno instalirano."
-    Start-Process -FilePath 'wscript.exe' -ArgumentList ('"' + (Join-Path $InstallDirectory 'Video-Downloader.vbs') + '"')
+    $launcher = Join-Path $InstallDirectory 'Launch-Downloader.ps1'
+    $arguments = '-NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "' + $launcher + '"'
+    Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -WindowStyle Hidden
 }
 catch {
     Add-Content -LiteralPath $logPath -Value "[$(Get-Date -Format s)] GREŠKA: $($_.Exception)"

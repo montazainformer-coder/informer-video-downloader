@@ -15,8 +15,9 @@ Interfejs uključuje lokalni portret-panel **Naša Šefica** iz `assets` foldera
 4. Nalepi link i klikni **Proveri link**.
 5. Izaberi folder i klikni **Preuzmi 1080p**.
 
-Možeš ga pokrenuti i direktno preko `Video-Downloader.vbs` ili
-`Start-Downloader.bat`, bez instalacije prečice.
+Možeš ga pokrenuti i direktno preko `Start-Downloader.bat`, bez instalacije
+prečice. Desktop prečica koristi `Launch-Downloader.ps1`, bez Windows Script
+Host zavisnosti.
 
 Pri prvom preuzimanju aplikacija automatski dodaje zvanični `yt-dlp` i FFmpeg u
 lokalni `tools` folder. Potreban je internet i prvi start može trajati malo duže.

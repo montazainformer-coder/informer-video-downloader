@@ -1,2 +1,2 @@
 @echo off
-start "" wscript.exe "%~dp0Video-Downloader.vbs"
+start "" powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "%~dp0Launch-Downloader.ps1"
