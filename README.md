@@ -46,11 +46,19 @@ Kada je opcija za izvor uključena, URL stranice se upisuje u metadata komentar,
 a pored videa se čuvaju `.info.json` i `.description` fajlovi. Oni sadrže originalni
 URL, autora/uploadera i ostale javno dostupne podatke.
 
+## Izlazni format
+
+- **MP4** koristi H.264 video i AAC-LC 48 kHz stereo audio. Namenjen je
+  svakodnevnoj upotrebi, deljenju i direktnom uvozu u Premiere.
+- **MXF** prvo preuzima MP4, zatim ga pretvara u DNxHR HQ 4:2:2 video i PCM
+  24-bit/48 kHz audio. Namenjen je montaži i može biti 20–50 puta veći od MP4-a.
+
 ## Napomene
 
 - Kvalitet je najbolji dostupan do 1080p; neki sajtovi nude samo nižu rezoluciju.
 - Završni MP4 preferira H.264 video i koristi AAC-LC 48 kHz stereo audio radi
   kompatibilnosti sa Adobe Premiere Pro.
+- MXF konverzija čuva privremeni MP4 ako konverzija ne uspe.
 - Privatni sadržaj, DRM i zaštite pristupa se ne zaobilaze.
 - Preuzimaj samo sadržaj za koji imaš dozvolu i poštuj uslove korišćenja sajta.
 - Sajtovi povremeno menjaju način rada; osvežavanje `tools\yt-dlp.exe` na noviju

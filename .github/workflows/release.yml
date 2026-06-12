@@ -24,6 +24,7 @@ jobs:
             'assets',
             'Downloader.ps1',
             'Apply-Update.ps1',
+            'Convert-ToMxf.ps1',
             'Launch-Downloader.ps1',
             'Start-Downloader.bat',
             'INSTALL.bat',

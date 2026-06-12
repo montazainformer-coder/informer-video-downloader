@@ -35,6 +35,9 @@ $script:VersionFile = Join-Path $script:Root 'version.txt'
 $script:AppVersion = if (Test-Path -LiteralPath $script:VersionFile) { (Get-Content -LiteralPath $script:VersionFile -Raw).Trim() } else { '1.0.0' }
 $script:GitHubRepo = 'montazainformer-coder/informer-video-downloader'
 $script:UpdateChecked = $false
+$script:CurrentStage = 'idle'
+$script:OutputMode = 'mp4'
+$script:DownloadManifest = $null
 
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -63,6 +66,12 @@ $xaml = @'
     <Style TargetType="CheckBox">
       <Setter Property="Foreground" Value="#CBD3E8"/>
       <Setter Property="Margin" Value="0,7,0,7"/>
+    </Style>
+    <Style TargetType="ComboBox">
+      <Setter Property="Background" Value="#151C31"/>
+      <Setter Property="Foreground" Value="#111827"/>
+      <Setter Property="BorderBrush" Value="#2A3557"/>
+      <Setter Property="Padding" Value="9,6"/>
     </Style>
   </Window.Resources>
 
@@ -137,6 +146,19 @@ $xaml = @'
     </Grid>
 
     <StackPanel Grid.Row="4" Margin="2,0,0,12">
+      <Grid Margin="0,0,0,6">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="110"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Text="Izlazni format" Foreground="#7783A5" VerticalAlignment="Center"/>
+        <ComboBox x:Name="OutputFormatBox" Grid.Column="1" SelectedIndex="0">
+          <ComboBoxItem Content="MP4 — H.264 + AAC (manji fajl)" Tag="mp4"/>
+          <ComboBoxItem Content="MXF — DNxHR HQ + PCM (Premiere montaža)" Tag="mxf"/>
+        </ComboBox>
+      </Grid>
+      <TextBlock x:Name="FormatHintText" Text="MP4 je preporučen za svakodnevno preuzimanje i deljenje."
+                 Foreground="#9DA8C5" FontSize="12" Margin="0,0,0,5" TextWrapping="Wrap"/>
       <CheckBox x:Name="SourceCheck" Content="Dodaj izvor u metapodatke i sačuvaj .source.txt fajl" IsChecked="True"/>
       <CheckBox x:Name="PlaylistCheck" Content="Preuzmi celu plejlistu (isključeno = samo jedan video)"/>
       <TextBlock Text="Preuzimaj samo sadržaj za koji imaš dozvolu. DRM i zaštite pristupa se ne zaobilaze." Foreground="#7884A5" FontSize="12" Margin="0,5,0,0"/>
@@ -156,7 +178,7 @@ $xaml = @'
         <TextBlock x:Name="StatusText" Text="Spremno" Foreground="#9DA8C5"/>
         <ProgressBar x:Name="ProgressBar" Height="5" Margin="0,8,16,0" Minimum="0" Maximum="100" Value="0" Background="#1D2741" Foreground="#6D5DFB"/>
       </StackPanel>
-      <Button x:Name="DownloadButton" Grid.Column="1" Content="Preuzmi 1080p" FontSize="15" Padding="24,12"/>
+      <Button x:Name="DownloadButton" Grid.Column="1" Content="Preuzmi 1080p MP4" FontSize="15" Padding="24,12"/>
       <Button x:Name="CancelButton" Grid.Column="1" Content="Otkaži" FontSize="15" Padding="24,12" Background="#B43C5A" Visibility="Collapsed"/>
     </Grid>
 
@@ -206,6 +228,8 @@ $cancelButton = $window.FindName('CancelButton')
 $versionText = $window.FindName('VersionText')
 $updateButton = $window.FindName('UpdateButton')
 $bossImage = $window.FindName('BossImage')
+$outputFormatBox = $window.FindName('OutputFormatBox')
+$formatHintText = $window.FindName('FormatHintText')
 
 $defaultDownloads = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads\Video Downloader'
 $folderBox.Text = $defaultDownloads
@@ -245,6 +269,7 @@ function Set-Busy {
         $analyzeButton.IsEnabled = -not $Busy
         $browseButton.IsEnabled = -not $Busy
         $updateButton.IsEnabled = -not $Busy
+        $outputFormatBox.IsEnabled = -not $Busy
         $downloadButton.Visibility = if ($Busy) { 'Collapsed' } else { 'Visible' }
         $cancelButton.Visibility = if ($Busy) { 'Visible' } else { 'Collapsed' }
         $cancelButton.IsEnabled = $Busy
@@ -446,6 +471,10 @@ function Update-DownloadLine {
         $progressBar.IsIndeterminate = $true
         $statusText.Text = 'Spajam tokove i upisujem metapodatke...'
     }
+    elseif ($Line -match '^\[MXF\]') {
+        $progressBar.IsIndeterminate = $true
+        $statusText.Text = 'Pravim MXF za montažu...'
+    }
     elseif ($Line -match '^ERROR:') {
         $statusText.Text = 'Greška pri preuzimanju; pokušavam ponovo...'
     }
@@ -469,20 +498,33 @@ function Complete-DownloadProcess {
     if ($process) { $process.Dispose() }
     $progressBar.IsIndeterminate = $false
 
+    $completedStage = $script:CurrentStage
+    $script:CurrentStage = 'idle'
+
     if ($script:CancelRequested) {
         $script:CancelRequested = $false
         Set-Busy $false 'Otkazano; delimični fajl je sačuvan za nastavak'
         Add-Log 'Preuzimanje je zaustavljeno. Sledeći klik na isti link nastavlja .part fajl.'
     }
     elseif ($ExitCode -eq 0) {
+        if ($completedStage -eq 'download' -and $script:OutputMode -eq 'mxf') {
+            Start-MxfConversion
+            return
+        }
         $progressBar.Value = 100
         Set-Busy $false 'Završeno; aplikacija je spremna za sledeći link'
-        Add-Log "Gotovo. Fajlovi su sačuvani u: $($folderBox.Text)"
+        $formatLabel = if ($completedStage -eq 'mxf') { 'MXF' } else { 'MP4' }
+        Add-Log "Gotovo ($formatLabel). Fajlovi su sačuvani u: $($folderBox.Text)"
         [System.Media.SystemSounds]::Asterisk.Play()
     }
     else {
         Set-Busy $false "Preuzimanje je prekinuto (kod $ExitCode)"
-        Add-Log 'Delimični .part fajl je sačuvan. Ponovi isti link da se preuzimanje nastavi.'
+        if ($completedStage -eq 'mxf') {
+            Add-Log 'MXF konverzija nije uspela. Privremeni MP4 je sačuvan i možeš ga koristiti.'
+        }
+        else {
+            Add-Log 'Delimični .part fajl je sačuvan. Ponovi isti link da se preuzimanje nastavi.'
+        }
     }
 }
 
@@ -513,14 +555,17 @@ function Read-CompletedOutput {
 }
 
 function Start-YtDlpProcess {
-    param([string[]]$Arguments)
+    param(
+        [string[]]$Arguments,
+        [string]$FileName = $script:YtDlp
+    )
 
     if ($script:CurrentProcess -and -not $script:CurrentProcess.HasExited) {
         throw 'Jedno preuzimanje je već u toku.'
     }
 
     $psi = New-Object Diagnostics.ProcessStartInfo
-    $psi.FileName = $script:YtDlp
+    $psi.FileName = $FileName
     $psi.Arguments = (($Arguments | ForEach-Object { ConvertTo-CommandLineArgument $_ }) -join ' ')
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
@@ -559,6 +604,25 @@ function Start-YtDlpProcess {
         }
     })
     $script:ProcessTimer.Start()
+}
+
+function Start-MxfConversion {
+    $converter = Join-Path $script:Root 'Convert-ToMxf.ps1'
+    if (-not (Test-Path -LiteralPath $converter)) {
+        throw 'Convert-ToMxf.ps1 nije pronađen.'
+    }
+
+    $script:CurrentStage = 'mxf'
+    Set-Busy $true 'Pravim MXF za montažu...'
+    $progressBar.IsIndeterminate = $true
+    Add-Log 'Preuzimanje je završeno. Konvertujem MP4 u DNxHR HQ / PCM MXF...'
+    $arguments = @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-File', $converter,
+        '-ManifestPath', $script:DownloadManifest,
+        '-FfmpegPath', $script:Ffmpeg
+    )
+    Start-YtDlpProcess -Arguments $arguments -FileName 'powershell.exe'
 }
 
 function Analyze-Url {
@@ -602,6 +666,17 @@ $browseButton.Add_Click({
 $analyzeButton.Add_Click({ Analyze-Url })
 $urlBox.Add_KeyDown({ if ($_.Key -eq 'Enter') { Analyze-Url } })
 $updateButton.Add_Click({ Check-ForUpdate $false })
+$outputFormatBox.Add_SelectionChanged({
+    $selectedTag = [string]$outputFormatBox.SelectedItem.Tag
+    if ($selectedTag -eq 'mxf') {
+        $formatHintText.Text = 'MXF koristi DNxHR HQ i PCM audio za Premiere. Fajl može biti 20–50 puta veći od MP4-a.'
+        $downloadButton.Content = 'Preuzmi i napravi MXF'
+    }
+    else {
+        $formatHintText.Text = 'MP4 je preporučen za svakodnevno preuzimanje i deljenje.'
+        $downloadButton.Content = 'Preuzmi 1080p MP4'
+    }
+})
 
 $downloadButton.Add_Click({
     $url = $urlBox.Text.Trim()
@@ -617,6 +692,10 @@ $downloadButton.Add_Click({
         Ensure-YtDlp
         Ensure-Ffmpeg
         Ensure-Directory $folderBox.Text
+
+        $script:OutputMode = [string]$outputFormatBox.SelectedItem.Tag
+        $script:CurrentStage = 'download'
+        $script:DownloadManifest = $null
 
         $outputTemplate = Join-Path $folderBox.Text '%(title).180B [%(id)s].%(ext)s'
         $args = @(
@@ -639,6 +718,10 @@ $downloadButton.Add_Click({
         )
 
         if (-not $playlistCheck.IsChecked) { $args += '--no-playlist' }
+        if ($script:OutputMode -eq 'mxf') {
+            $script:DownloadManifest = Join-Path ([IO.Path]::GetTempPath()) ('InformerVideoDownloader-' + [guid]::NewGuid().ToString('N') + '.paths.txt')
+            $args += @('--print-to-file', 'after_move:%(filepath)s', $script:DownloadManifest)
+        }
         if ($sourceCheck.IsChecked) {
             $args += @(
                 '--parse-metadata', 'webpage_url:(?P<meta_comment>.+)',
@@ -649,7 +732,8 @@ $downloadButton.Add_Click({
         }
 
         $args += @('--', $url)
-        Add-Log 'Pokrećem preuzimanje u najboljem dostupnom kvalitetu do 1080p...'
+        $formatName = if ($script:OutputMode -eq 'mxf') { 'MXF (posle MP4 preuzimanja)' } else { 'MP4' }
+        Add-Log "Pokrećem preuzimanje do 1080p. Izlaz: $formatName."
         Start-YtDlpProcess $args
     }
     catch {
